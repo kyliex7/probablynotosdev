@@ -18,14 +18,6 @@ loader:
 
   sti
 
-  ;; for debugging
-  ;; mov ax, 0xdead
-  ;; mov bx, 0xbeef
-  ;; push ax
-  ;; push bx
-  ;; pop ax
-  ;; pop bx
-
   cld
   mov si, msg
   call bios_print
@@ -34,14 +26,14 @@ loader:
 
 load_stage_two:
   xor ax, ax               ;; zero out es cus,
-  mov es, ax               ;; abs = (seg * 16) + offset
+  mov es, ax               ;; absaddr = (seg * 16) + offset
   mov ah, 0x02             ;; read sectors
   mov al, 0x01             ;; number of sectors to read
   mov ch, 0x00             ;; cylinder number
   mov cl, 0x02             ;; sector number to read
   mov dh, 0x00             ;; head number
   mov dl, 0x00             ;; 0x81 to read from hard drive, 0x00 for the floppy
-  mov bx, 0x8000           ;; location we want to load the data
+  mov bx, 0x8000           ;; location we want to load the data (offset to absaddr formula)
   int 0x13
   jc disk_err
   ret
