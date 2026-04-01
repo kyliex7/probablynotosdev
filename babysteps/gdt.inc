@@ -19,6 +19,7 @@ gdt_data:
 
 gdt_end:
 
+;; for lgdt
 gdt_descriptor:
-  dw gdt_end - gdt_start - 1        ;; sizeof(gdt)
-  dd gdt_start                      ;; *gdt
+  dw gdt_end - gdt_start - 1  ;; sizeof(gdt)
+  dd gdt_start                ;; *gdt

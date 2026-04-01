@@ -1,0 +1,19 @@
+# Ignore the actual cross-compiler installation
+/bin/
+/i686-elf/
+/include/
+/lib/
+/libexec/
+/share/
+
+# Ignore the extracted source code
+/binutils-*/
+/gcc-*/
+
+# Ignore the build directories
+/*-build/
+
+# Ignore the downloaded tarballs
+*.tar.gz
+*.tar.xz
+*.tar.bz2

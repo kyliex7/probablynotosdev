@@ -19,8 +19,13 @@ loader:
   sti
 
   cld
-  mov si, msg
+  mov si, msg1
   call bios_print
+  mov si, msg2
+  call bios_print
+  mov si, msg3
+  call bios_print
+
   call load_stage_two
   jmp 0x8000
 
@@ -50,7 +55,9 @@ disk_err:
 
 %include "bios_print.inc"
 
-msg: db "[i] successfully loaded the bootloader", 0xd, 0xa, 0
+msg1: db 0xa, 0
+msg2: db "here we go bruh", 0xd, 0xa, 0
+msg3: db "[+] successfully loaded the bootloader", 0xd, 0xa, 0
 loaderr: db "[-] failed loading the code from disk", 0x0d, 0x0a, 0
 
 times 510 - ($ - $$) db 0
