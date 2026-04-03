@@ -44,13 +44,17 @@ pm_entry:
   mov ebx, msg_info_prot2
   call pm_print
 
+  cli
+
+.halt:
   hlt
+  jmp .halt
 
 
-%include "bios_print.inc"
-%include "a20.inc"
-%include "gdt.inc"
-%include "pm_print.inc"
+%include "include/bios_print.inc"
+%include "include/a20.inc"
+%include "include/gdt.inc"
+%include "include/pm_print.inc"
 
 msg_load_succ: db "[+] successfully loaded stage 2", 0x0d, 0x0a, 0
 msg_a20_enable_succ: db "[+] A20 is now enabled", 0x0d, 0x0a, 0

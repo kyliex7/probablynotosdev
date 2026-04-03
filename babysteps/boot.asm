@@ -53,7 +53,7 @@ disk_err:
   hlt
   jmp $
 
-%include "bios_print.inc"
+%include "include/bios_print.inc"
 
 msg1: db 0xa, 0
 msg2: db "here we go bruh", 0xd, 0xa, 0
