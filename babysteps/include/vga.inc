@@ -1,3 +1,7 @@
+;; bruh i finally chose give up
+;; will implement this again in the meantime, but c is kinda cool to write the kernel ngl
+;; asm is also, but c is the best as i think
+;; idfk, maybe skill issue (it is)
 VGA_ADDR: equ 0xb8000
 VGA_END:  equ 0xb8000 + (25 * 80 * 2)
 WHITE_ON_BLACK: equ 0x0f
