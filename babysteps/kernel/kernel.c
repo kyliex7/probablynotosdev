@@ -21,17 +21,33 @@ typedef enum vga_color {
   VGA_COLOR_WHITE = 15
 } vga_color_t;
 
+#define VGA_MEMORY 0xB8000
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef unsigned char uchar;
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
-#define VGA_MEMORY 0xB8000
 
 size_t term_row, term_col;
 u8 term_clr;
 u16* term_buf = (u16*)VGA_MEMORY;
+
+void term_init(void);
+void term_setclr(u8 clr);
+void term_scroll(void);
+void term_putentryat(uchar c, u8 clr, size_t x, size_t y);
+void term_putchar(uchar c);
+void term_write(const char* s, size_t size);
+void term_writestr(const char* s);
+
+void kmain(void) {
+  term_init();
+  for (int i = 0; i < 25; i++) {
+    term_writestr("while 0xdeadbeef\n");
+  }
+  term_writestr("while 0xcafebabe\n");
+}
 
 static inline u8 vga_entry_clr(vga_color_t fg, vga_color_t bg) {
   return fg | bg << 4;
@@ -43,8 +59,8 @@ static inline u16 vga_entry(uchar c, u8 color) {
 
 size_t strlen(const char* s) {
   size_t len = 0;
-  while (s[len]) len++;
-  return len;
+  while (s[len++]);
+  return len - 1;
 }
 
 void term_init(void) {
@@ -62,6 +78,23 @@ void term_init(void) {
 
 void term_setclr(u8 clr) { term_clr = clr; }
 
+void term_scroll() {
+  // move every row one line up
+  for (size_t y = 0; y < VGA_HEIGHT; y++) {
+    for (size_t x = 0; x < VGA_WIDTH; x++) {
+      term_buf[y * VGA_WIDTH + x] = term_buf[(y + 1) * VGA_WIDTH + x];
+    }
+  }
+
+  // clear the last row
+  for (size_t x = 0; x < VGA_WIDTH; x++) {
+    term_buf[(VGA_HEIGHT - 1) * VGA_WIDTH + x] = vga_entry(' ', term_clr);
+  }
+
+  // update the row
+  term_row = VGA_HEIGHT - 1;
+}
+
 void term_putentryat(uchar c, u8 clr, size_t x, size_t y) {
   const size_t idx = y * VGA_WIDTH + x;
   term_buf[idx] = vga_entry(c, clr);
@@ -70,7 +103,21 @@ void term_putentryat(uchar c, u8 clr, size_t x, size_t y) {
 void term_putchar(uchar c) {
   if (c == '\n') {
     term_col = 0;
-    if (++term_row >= VGA_HEIGHT) term_row = 0;
+    if (++term_row >= VGA_HEIGHT) term_scroll();
+    return;
+  }
+
+  if (c == '\b') {
+    if (term_col > 0) {
+      term_col--;
+      term_putentryat(' ', term_clr, term_col, term_row);
+    }
+    return;
+  }
+
+  if (c == '\t') {
+    term_col = (term_col + 4) & ~3;
+    if (term_col >= VGA_WIDTH) term_scroll();
     return;
   }
 
@@ -79,7 +126,7 @@ void term_putchar(uchar c) {
   if (++term_col >= VGA_WIDTH) {
     term_col = 0;
     if (++term_row >= VGA_HEIGHT) {
-      term_row = 0;
+      term_scroll();
     }
   }
 }
@@ -91,8 +138,3 @@ void term_write(const char* s, size_t size) {
 }
 
 void term_writestr(const char* s) { term_write(s, strlen(s)); }
-
-void kmain(void) {
-  term_init();
-  term_writestr("LOL IM NOOB THO :D\n");
-}
