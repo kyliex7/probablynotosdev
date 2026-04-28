@@ -1,0 +1,52 @@
+TOOLCHAIN := $(CURDIR)/toolchain/bin
+CC := $(TOOLCHAIN)/i686-elf-gcc
+NASM := nasm
+LD := ld
+
+CFLAGS := -ffreestanding -O2 -m32 -Ikernel/kernel/include -Wa,--32
+NASMFLAGS_BIN := -f bin
+NASMFLAGS_ELF := -f elf32
+LDFLAGS := -m elf_i386 -T kernel/linker.ld --oformat binary
+
+.PHONY: all run debug clean
+
+all: bin/image.bin
+
+bin/boot.bin: boot.asm
+	$(NASM) $(NASMFLAGS_BIN) boot.asm -o bin/boot.bin
+
+bin/stage2.o: stage2.asm
+	$(NASM) $(NASMFLAGS_ELF) stage2.asm -o bin/stage2.o
+
+bin/kernel.o: kernel/kernel/src/kernel/kernel.c kernel/kernel/include/kernel/tty.h
+	$(CC) -c kernel/kernel/src/kernel/kernel.c -o bin/kernel.o $(CFLAGS)
+
+bin/memcpy.o: kernel/kernel/src/libc/memcpy.c kernel/kernel/include/string.h
+	$(CC) -c kernel/kernel/src/libc/memcpy.c -o bin/memcpy.o $(CFLAGS)
+
+bin/memset.o: kernel/kernel/src/libc/memset.c kernel/kernel/include/string.h
+	$(CC) -c kernel/kernel/src/libc/memset.c -o bin/memset.o $(CFLAGS)
+
+bin/string.o: kernel/kernel/src/libc/string.c kernel/kernel/include/string.h
+	$(CC) -c kernel/kernel/src/libc/string.c -o bin/string.o $(CFLAGS)
+
+bin/stage2.bin: bin/stage2.o bin/kernel.o bin/memcpy.o bin/memset.o bin/string.o
+	$(LD) $(LDFLAGS) -o bin/stage2.bin \
+		bin/stage2.o bin/kernel.o bin/memcpy.o bin/memset.o bin/string.o
+
+bin/image.bin: bin/boot.bin bin/stage2.bin
+	cat bin/boot.bin bin/stage2.bin > bin/image.bin
+
+run: bin/image.bin
+	qemu-system-x86_64 -drive format=raw,file=bin/image.bin,index=0,if=floppy -monitor stdio
+
+debug: bin/image.bin
+	qemu-system-x86_64 -drive format=raw,file=bin/image.bin -s -S &
+	gdb -q -x ~/dotfiles/gdb/x_og.cfg \
+		-ex "target remote :1234" \
+		-ex "break *0x7c00" \
+		-ex "break *0x8000" \
+		-ex "continue"
+
+clean:
+	rm -f bin/*

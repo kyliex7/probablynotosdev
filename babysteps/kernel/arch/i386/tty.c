@@ -1,25 +1,8 @@
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
-typedef enum vga_color {
-  VGA_COLOR_BLACK = 0,
-  VGA_COLOR_BLUE = 1,
-  VGA_COLOR_GREEN = 2,
-  VGA_COLOR_CYAN = 3,
-  VGA_COLOR_RED = 4,
-  VGA_COLOR_MAGENTA = 5,
-  VGA_COLOR_BROWN = 6,
-  VGA_COLOR_LIGHT_GREY = 7,
-  VGA_COLOR_DARK_GREY = 8,
-  VGA_COLOR_LIGHT_BLUE = 9,
-  VGA_COLOR_LIGHT_GREEN = 10,
-  VGA_COLOR_LIGHT_CYAN = 11,
-  VGA_COLOR_LIGHT_RED = 12,
-  VGA_COLOR_LIGHT_MAGENTA = 13,
-  VGA_COLOR_LIGHT_BROWN = 14,
-  VGA_COLOR_WHITE = 15
-} vga_color_t;
+#include "vga.h"
 
 #define VGA_MEMORY 0xB8000
 typedef uint8_t u8;
@@ -40,28 +23,7 @@ void term_putentryat(uchar c, u8 clr, size_t x, size_t y);
 void term_putchar(uchar c);
 void term_write(const char* s, size_t size);
 void term_writestr(const char* s);
-
-void kmain(void) {
-  term_init();
-  for (int i = 0; i < 25; i++) {
-    term_writestr("while 0xdeadbeef\n");
-  }
-  term_writestr("while 0xcafebabe\n");
-}
-
-static inline u8 vga_entry_clr(vga_color_t fg, vga_color_t bg) {
-  return fg | bg << 4;
-}
-
-static inline u16 vga_entry(uchar c, u8 color) {
-  return (u16)c | (u16)color << 8;
-}
-
-size_t strlen(const char* s) {
-  size_t len = 0;
-  while (s[len++]);
-  return len - 1;
-}
+void term_clear();
 
 void term_init(void) {
   term_row = 0;
@@ -138,3 +100,13 @@ void term_write(const char* s, size_t size) {
 }
 
 void term_writestr(const char* s) { term_write(s, strlen(s)); }
+
+void term_clear(void) {
+  // clear the screen
+  for (size_t i = 0; i < VGA_HEIGHT * VGA_WIDTH; i++) {
+    term_buf[i] = vga_entry(' ', term_clr);
+  }
+
+  // reset the idxs
+  term_row = 0, term_col = 0;
+}

@@ -1,28 +1,56 @@
+TOOLCHAIN := $(CURDIR)/toolchain/bin
+CC := $(TOOLCHAIN)/i686-elf-gcc
+NASM := nasm
+LD := ld
+AR := ar
+
+CFLAGS := -ffreestanding -O2 -m32 -Ikernel/include -Wa,--32
+NASMFLAGS_BIN := -f bin
+NASMFLAGS_ELF := -f elf32
+LDFLAGS := -m elf_i386 -T kernel/linker.ld --oformat binary
+
+.PHONY: all run debug clean
+
+all: bin/image.bin
+
 bin/boot.bin: boot.asm
-	nasm -f bin boot.asm -o bin/boot.bin
+	$(NASM) $(NASMFLAGS_BIN) boot.asm -o bin/boot.bin
 
 bin/stage2.o: stage2.asm
-	nasm -f elf32 stage2.asm -o bin/stage2.o
+	$(NASM) $(NASMFLAGS_ELF) stage2.asm -o bin/stage2.o
 
-bin/kernel.o: kernel/kernel.c
-	i686-elf-gcc -c kernel/kernel.c -o bin/kernel.o -ffreestanding -O2 -m32 -Wa,--32
+bin/kernel.o: kernel/src/kernel/kernel.c kernel/include/kernel/tty.h kernel/arch/i386/tty.c
+	$(CC) -c kernel/src/kernel/kernel.c -o bin/kernel.o $(CFLAGS)
 
-bin/stage2.bin: bin/stage2.o bin/kernel.o
-	ld -m elf_i386 -T kernel/linker.ld -o bin/stage2.bin bin/stage2.o bin/kernel.o --oformat binary
+bin/arch_tty.o: kernel/arch/i386/tty.c kernel/include/kernel/tty.h
+	$(CC) -c kernel/arch/i386/tty.c -o bin/arch_tty.o $(CFLAGS)
+
+bin/memcpy.o: kernel/src/libc/memcpy.c kernel/include/string.h
+	$(CC) -c kernel/src/libc/memcpy.c -o bin/memcpy.o $(CFLAGS)
+
+bin/memset.o: kernel/src/libc/memset.c kernel/include/string.h
+	$(CC) -c kernel/src/libc/memset.c -o bin/memset.o $(CFLAGS)
+
+bin/string.o: kernel/src/libc/string.c kernel/include/string.h
+	$(CC) -c kernel/src/libc/string.c -o bin/string.o $(CFLAGS)
+
+bin/stage2.bin: bin/stage2.o bin/kernel.o bin/arch_tty.o bin/memcpy.o bin/memset.o bin/string.o
+	$(LD) $(LDFLAGS) -o bin/stage2.bin \
+	bin/stage2.o bin/kernel.o bin/arch_tty.o bin/memcpy.o bin/memset.o bin/string.o
 
 bin/image.bin: bin/boot.bin bin/stage2.bin
 	cat bin/boot.bin bin/stage2.bin > bin/image.bin
 
 run: bin/image.bin
-	qemu-system-x86_64 -drive format=raw,file=bin/image.bin,index=0,if=floppy -monitor stdio
+	qemu-system-x86_64 -drive format=raw,file=bin/image.bin,index=0,if=floppy
 
 debug: bin/image.bin
 	qemu-system-x86_64 -drive format=raw,file=bin/image.bin -s -S &
 	gdb -q -x ~/dotfiles/gdb/x_og.cfg \
-			-ex "target remote :1234" \
-			-ex "break *0x7c00" \
-			-ex "break *0x8000" \
-			-ex "continue"
+	-ex "target remote :1234" \
+	-ex "break *0x7c00" \
+	-ex "break *0x8000" \
+	-ex "continue"
 
 clean:
 	rm -f bin/*
