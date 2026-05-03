@@ -1,4 +1,5 @@
 ### structure
+```
 bin
 ├── arch_tty.o
 ├── boot.bin
@@ -57,3 +58,4 @@ links.txt
 makefile
 roadmap.md
 stage2.asm
+```
