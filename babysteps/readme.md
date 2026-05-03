@@ -47,12 +47,12 @@ kernel
 │   └── string.h
 ├── linker.ld
 └── src
-    ├── kernel
-    │   └── kernel.c
-    └── libc
-        ├── memcpy.c
-        ├── memset.c
-        └── string.c
+├── kernel
+│   └── kernel.c
+└── libc
+├── memcpy.c
+├── memset.c
+└── string.c
 links.txt
 makefile
 roadmap.md
