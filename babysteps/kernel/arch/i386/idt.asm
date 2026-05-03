@@ -1,3 +1,5 @@
+extern kbd_handler
+
 %macro isr_err_stub 1
 isr_stub_%1:
 	call exception_handler
@@ -49,5 +51,12 @@ isr_stub_table:
 %assign i 0
 %rep 32
 	dd isr_stub_%+i
-%assign i i+i
+%assign i i+1
 %endrep
+
+global irq1_stub
+irq1_stub:
+	cli
+	call kbd_handler
+	sti
+	iret

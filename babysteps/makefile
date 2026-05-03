@@ -13,13 +13,14 @@ LDFLAGS := -m elf_i386 -T kernel/linker.ld --oformat binary
 
 all: bin/image.bin
 
+######################################################################
 bin/boot.bin: boot.asm
 	$(NASM) $(NASMFLAGS_BIN) boot.asm -o bin/boot.bin
 
 bin/stage2.o: stage2.asm
 	$(NASM) $(NASMFLAGS_ELF) stage2.asm -o bin/stage2.o
 
-bin/kernel.o: kernel/src/kernel/kernel.c kernel/include/kernel/tty.h kernel/arch/i386/tty.c
+bin/kernel.o: kernel/src/kernel/kernel.c
 	$(CC) -c kernel/src/kernel/kernel.c -o bin/kernel.o $(CFLAGS)
 
 bin/arch_tty.o: kernel/arch/i386/tty.c kernel/include/kernel/tty.h
@@ -40,6 +41,9 @@ bin/idt_asm.o: kernel/arch/i386/idt.asm
 bin/pic.o: kernel/arch/i386/pic.c kernel/include/kernel/pic.h
 	$(CC) -c kernel/arch/i386/pic.c -o bin/pic.o $(CFLAGS)
 
+bin/kbd.o: kernel/arch/i386/kbd.c kernel/include/kernel/kbd.h
+	$(CC) -c kernel/arch/i386/kbd.c -o bin/kbd.o $(CFLAGS)
+
 ########################### LIBC ###########################
 bin/memcpy.o: kernel/src/libc/memcpy.c kernel/include/string.h
 	$(CC) -c kernel/src/libc/memcpy.c -o bin/memcpy.o $(CFLAGS)
@@ -51,9 +55,9 @@ bin/string.o: kernel/src/libc/string.c kernel/include/string.h
 	$(CC) -c kernel/src/libc/string.c -o bin/string.o $(CFLAGS)
 
 ###########################################################
-bin/stage2.bin: bin/stage2.o bin/kernel.o bin/arch_tty.o bin/gdt_asm.o bin/gdt.o bin/idt_asm.o bin/idt.o bin/pic.o bin/memcpy.o bin/memset.o bin/string.o
+bin/stage2.bin: bin/stage2.o bin/kernel.o bin/arch_tty.o bin/gdt_asm.o bin/gdt.o bin/idt_asm.o bin/idt.o bin/pic.o bin/kbd.o bin/memcpy.o bin/memset.o bin/string.o
 	$(LD) $(LDFLAGS) -o bin/stage2.bin \
-	bin/stage2.o bin/kernel.o bin/arch_tty.o bin/gdt.o bin/gdt_asm.o bin/idt.o bin/idt_asm.o bin/pic.o bin/memcpy.o bin/memset.o bin/string.o
+	bin/stage2.o bin/kernel.o bin/arch_tty.o bin/gdt.o bin/gdt_asm.o bin/idt.o bin/idt_asm.o bin/pic.o bin/kbd.o bin/memcpy.o bin/memset.o bin/string.o
 
 bin/image.bin: bin/boot.bin bin/stage2.bin
 	cat bin/boot.bin bin/stage2.bin > bin/image.bin
